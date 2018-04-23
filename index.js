@@ -1,11 +1,12 @@
 var http = require('http')
 var url = require('url')
 var fs = require('fs')
+var PostParser =  require('./parsePost');
 
 http.createServer(function (request, response) {
     setResponseHeader(response)
     response.end(JSON.stringify(dispatchRouter(request)))
-}).listen(8088, '0.0.0.0');
+}).listen(80, '0.0.0.0');
 console.log('server running at : 127.0.0.1:80')
 
 function setResponseHeader(response) {
@@ -27,7 +28,6 @@ function isWritingsUrl(value) {
 
 function dispatchWritings(user) {
     console.log(`userName:${user}`)
-    console.log(queryWritingsByUser(user))
     return queryWritingsByUser(user)
 
     // return [{
@@ -57,21 +57,29 @@ function dispatchWritings(user) {
 
 function queryWritingsByUser(user) {
     console.log('queryWritingsByUser')
-    let rootDir = `/var/www/writings-repository/${user}/`
+    let rootDir = `/var/www/writings-repository/posts/kiroInn/writings-post/`
     let writings = []
     fs.readdirSync(rootDir).forEach(fileName => {
         let filePath = `${rootDir}${fileName}`
         if(fs.lstatSync(filePath).isFile()){
-            var writing = {}
-            var content = fs.readFileSync(filePath, {encoding: 'utf-8'})
-            writing.content = content
-            writings.push(writing)
+            writings.push(parseWriting(fs.readFileSync(filePath, {encoding: 'utf-8'})))
         } else {
             console.error(`${filePath} is not file`)
         }
     })
     return writings
 }
+
+function parseWriting(content) {
+    return {
+        title: PostParser.getTitle(content),
+        date: PostParser.getDate(content),
+        content: PostParser.getContent(content),
+        abstract: 'TODO',
+        img: PostParser.getImg(content)
+    }
+}
+
 
 function dispatchDefault() {
     return {
